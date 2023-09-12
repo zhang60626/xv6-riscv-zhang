@@ -203,16 +203,28 @@ w_pmpaddr0(uint64 x)
 
 // supervisor address translation and protection;
 // holds the address of the page table.
+// 将 x 写入 satp 寄存器
 static inline void 
 w_satp(uint64 x)
 {
+  // 内联汇编语句
+  // volatile 是可选的。volatile 告诉编译器不要进行优化汇编代码
+  // asm (汇编语句 : 输出操作数 : 输入操作数 : 可能被修改了值的寄存器)
+  // 除汇编语句是必须的外，其他都是非必须的
+  // CSR: Control and Status Register, 控制和状态寄存器
+  // csrw 是一个伪指令，用法为：csrw csr, rs，它将 rs 寄存器的值写入 csr 寄存器中
+  // 其基础指令为 csrrw x0, csr, rs。
+  // `"r" (x)` 表示将 x 放入一个通用寄存器中（由编译器决定哪个寄存器）
+  // %0 是一个占位符，表示指令中引用的第一个操作数，在这里是指 x
   asm volatile("csrw satp, %0" : : "r" (x));
 }
 
+// 读取 satp 寄存器的值
 static inline uint64
 r_satp()
 {
   uint64 x;
+  // csrr 指令：读取 CSR 寄存器的值
   asm volatile("csrr %0, satp" : "=r" (x) );
   return x;
 }
@@ -320,10 +332,12 @@ r_ra()
 }
 
 // flush the TLB.
+// 刷新快表
 static inline void
 sfence_vma()
 {
   // the zero, zero means flush all TLB entries.
+  // vma：virtual memory address 虚拟内存地址
   asm volatile("sfence.vma zero, zero");
 }
 
